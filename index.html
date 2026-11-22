@@ -36,6 +36,7 @@ textarea{width:100%;font:inherit;border:2px solid var(--line);border-radius:12px
 .small{font-size:13px;color:var(--mut)}
 .wd,.wt{transition:background .12s,box-shadow .12s}.wd.on{background:#fde047;box-shadow:0 0 0 2px #fde047;border-radius:4px;color:#111}.wt.on{background:#86efac;box-shadow:0 0 0 2px #86efac;border-radius:4px;color:#111}
 .tk{}.vr{transition:background .12s}.vr.on{background:#bbf7d0;border-radius:6px}.tn{border-radius:6px;transition:background .12s}
+.wd.sel,.sn.sel,[id^=ln].sel{outline:2px solid #f59e0b;border-radius:6px}#rdt .wd,[id^=ln] .wd{cursor:pointer}
 </style>
 </head>
 <body>
@@ -98,7 +99,7 @@ const NAV=[['home','🏠','Ana'],['story','📖','Hikâye'],['work','🧠','Çal
 const WORKV=['cards','quiz','nb','nbr','dict','speak','cloze','mis','tr','irr','dlg','gr','pic','ph','em','num','pron','ten','rdy','cult','sen','kal','kq','gap','wri','plan','srs','lis','itp'];
 function renderNav(){$('#nav').innerHTML=NAV.map(n=>`<button data-v="${n[0]}" class="${view===n[0]||(view==='test'&&n[0]==='home')||(SUBV.includes(view)&&n[0]==='story')||(WORKV.includes(view)&&n[0]==='work')?'on':''}"><b>${n[1]}</b>${n[2]}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{view=b.dataset.v;render();});}
-function render(){stopAudio();if(view!=='duel'&&DU&&!DU.keep)duelLeave();renderNav();({home:rHome,cards:rCards,quiz:rQuiz,chat:rChat,test:rTest,duel:rDuel,story:rStoryHome,reader:rReader,build:rBuild,prac:rPrac,help:rHelp,pdk:rPdk,exam:rExam,work:rWork,nb:rNb,nbr:rNbr,dict:rDict,speak:rSpeak,cloze:rCloze,mis:rMis,tr:rTr,irr:rIrr,dlg:rDlg,gr:rGr,pic:rPic,ph:rPh,em:rEm,num:rNum,pron:rPron,ten:rTen,rdy:rRdy,cult:rCult,sen:rSen,kal:rKal,kq:rKq,gap:rGap,wri:rWri,plan:rPlan,srs:rSrs,lis:rLis,itp:rItp,prog:rProg})[view]();window.scrollTo(0,0);}
+function render(){stopAudio();closeSheet();if(view!=='duel'&&DU&&!DU.keep)duelLeave();renderNav();({home:rHome,cards:rCards,quiz:rQuiz,chat:rChat,test:rTest,duel:rDuel,story:rStoryHome,reader:rReader,build:rBuild,prac:rPrac,help:rHelp,pdk:rPdk,exam:rExam,work:rWork,nb:rNb,nbr:rNbr,dict:rDict,speak:rSpeak,cloze:rCloze,mis:rMis,tr:rTr,irr:rIrr,dlg:rDlg,gr:rGr,pic:rPic,ph:rPh,em:rEm,num:rNum,pron:rPron,ten:rTen,rdy:rRdy,cult:rCult,sen:rSen,kal:rKal,kq:rKq,gap:rGap,wri:rWri,plan:rPlan,srs:rSrs,lis:rLis,itp:rItp,prog:rProg})[view]();window.scrollTo(0,0);}
 const chips=()=>`<div class="row">${LEVELS.map(l=>`<button class="chip ${l===S.lvl?'sel':''}" data-l="${l}">${l}</button>`).join('')}</div>`;
 const tchips=()=>`<div class="row">${Object.entries(TOPICS).map(([k,v])=>`<button class="chip ${k===S.topic?'sel':''}" data-t="${k}">${v.ic} ${v.n}</button>`).join('')}</div>`;
 function wire(){document.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{S.lvl=b.dataset.l;save();render();});document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S.topic=b.dataset.t;save();render();});}
@@ -770,20 +771,57 @@ function playDlg(L,rate,o){
     if(i>=L.length){AU.on=false;o.done&&o.done();return;}
     const e=L[i],t=String(e.en).replace(ZW,''),role=e.s==='A'?'A':'B',idx=i+off;
     o.onIdx&&o.onIdx(idx);
-    const st=[];t.replace(/\S+/g,(w,p)=>{st.push(p);return w;});
-    let adv=false,timer=null,w=null,viaB=false,t0=0,last=-1;
+    const st=[],cw=[];let cum=0;t.replace(/\S+/g,(w,p)=>{st.push(p);cw.push(cum);const L=w.replace(/[^\p{L}\p{N}]/gu,'').length;cum+=Math.max(2,L)+1+(/[.!?…]$/.test(w)?5:/[,;:—-]$/.test(w)?3:0);return w;});
+    let adv=false,timer=null,w=null,viaB=false,t0=0,last=-1,ck='';
     const H=o.hl||dlgHL;const hl=k=>{if(k!==last){last=k;H(idx,k,st.length);}};
     const nx=()=>{if(adv||tok!==AU.tok)return;adv=true;clearInterval(timer);clearTimeout(w);H(idx,-1,0);i++;setTimeout(step,550);};
     try{
       let u;if(o.single){u=new SpeechSynthesisUtterance(t);u.lang=VL;pv(u);u.rate=rate;}else u=dlgU(t,role,rate);
-      u.onstart=()=>{t0=Date.now();clearInterval(timer);timer=setInterval(()=>{if(viaB)return;const c=(Date.now()-t0)/(72/rate);let k=0;for(let j=0;j<st.length;j++)if(st[j]<=c)k=j;hl(k);},90);hl(0);};
+      ck='cal_'+VL+'_'+((u.voice&&u.voice.name)||'def')+'_'+role+'_'+rate;let cal=0;try{cal=+localStorage.getItem(ck)||0;}catch(e){}
+      const LEAD=150,per=cal||(70/rate);
+      u.onstart=()=>{t0=Date.now();clearInterval(timer);timer=setInterval(()=>{if(viaB)return;const el=Date.now()-t0-LEAD;let k=0;for(let j=0;j<cw.length;j++)if(cw[j]*per<=el)k=j;hl(k);},70);hl(0);};
       u.onboundary=ev=>{if(ev.name&&ev.name!=='word')return;viaB=true;let k=0;for(let j=0;j<st.length;j++)if(st[j]<=ev.charIndex)k=j;hl(k);};
-      u.onend=nx;u.onerror=nx;speechSynthesis.speak(u);
+      u.onend=()=>{if(!viaB&&t0&&tok===AU.tok){const nm=(Date.now()-t0-LEAD)/cum;if(nm>12&&nm<500){const v=cal?cal*.4+nm*.6:nm;try{localStorage.setItem(ck,String(v));}catch(e){}}}nx();};
+      u.onerror=nx;speechSynthesis.speak(u);
     }catch(x){nx();}
     w=setTimeout(nx,Math.max(3000,t.split(' ').length*650/rate+2500));};
   try{speechSynthesis.cancel();speechSynthesis.resume();}catch(e){}setTimeout(step,300);
 }
 function sayRole(t,role,idx){playDlg([{en:t,s:role}],.85,{off:idx||0});}
+// ---- kelime/cümle anlamı paneli + çevrimiçi çeviri ----
+const _mean={};
+async function meanOnline(text){
+  if(_mean[text])return _mean[text];
+  const from=VL.slice(0,2),to='tr';
+  const tmo=async(url)=>{const c=new AbortController();const id=setTimeout(()=>c.abort(),7000);try{const r=await fetch(url,{signal:c.signal});return await r.json();}finally{clearTimeout(id);}};
+  let out=null;
+  try{if(self.Translator&&Translator.availability){const av=await Translator.availability({sourceLanguage:from,targetLanguage:to});if(av==='available'){out=await Promise.race([(async()=>{const tr=await Translator.create({sourceLanguage:from,targetLanguage:to});return await tr.translate(text);})(),new Promise((_,rej)=>setTimeout(()=>rej(0),4000))]);}}}catch(e){}
+  if(!out)try{const j=await tmo('https://translate.googleapis.com/translate_a/single?client=gtx&sl='+from+'&tl='+to+'&dt=t&q='+encodeURIComponent(text));out=(j[0]||[]).map(x=>x[0]).join('');}catch(e){}
+  if(!out)try{const j=await tmo('https://api.mymemory.translated.net/get?q='+encodeURIComponent(text)+'&langpair='+from+'|'+to);out=j&&j.responseData&&j.responseData.translatedText;}catch(e){}
+  if(out)_mean[text]=out;return out||null;
+}
+const tapNorm=w=>String(w).toLowerCase().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}'’-]+$/gu,'');
+function sheetBox(){let b=document.getElementById('wp');if(!b){b=document.createElement('div');b.id='wp';b.dataset.g='1';document.body.appendChild(b);}return b;}
+function closeSheet(){const b=document.getElementById('wp');if(b){if(b.dataset.g)b.remove();else b.innerHTML='';}document.querySelectorAll('.sel').forEach(x=>x.classList.remove('sel'));}
+function sentSheet(sent,tr,speak){
+  const box=sheetBox();
+  box.innerHTML=`<div id="wsheet" style="position:fixed;left:10px;right:10px;bottom:84px;background:#fff;border-radius:16px;padding:14px;box-shadow:0 4px 24px rgba(0,0,0,.25);z-index:8;max-width:540px;margin:0 auto;max-height:50vh;overflow:auto"><div class="row"><div style="flex:1;font-size:17px;font-weight:700">${esc(sent)}</div><button class="ghost sm" id="wc">✕</button></div><div id="stt" style="font-size:17px;margin:8px 0">${tr?'🇹🇷 '+esc(tr):'⏳ Çevriliyor…'}</div><div class="row"><button class="ghost" id="wsp">🔊 Dinle</button></div></div>`;
+  document.getElementById('wc').onclick=closeSheet;document.getElementById('wsp').onclick=()=>{speak?speak():say(sent,.8);};
+  if(!tr)meanOnline(sent).then(r=>{const e=document.getElementById('stt');if(e)e.innerHTML=r?'🇹🇷 '+esc(r)+' <span class="small">(otomatik çeviri)</span>':'Çeviri alınamadı (internet bağlantısını kontrol et).';});
+}
+document.addEventListener('click',ev=>{
+  if(ev.target.closest('#wsheet'))return;
+  const wd=ev.target.closest('.wd');if(wd&&wd.closest('#txt'))return;
+  const ln=ev.target.closest('[id^=ln]'),rs=ev.target.closest('#rdt .sn');
+  const isLn=ln&&/^ln\d+$/.test(ln.id);
+  if(!isLn&&!rs)return;
+  const host=isLn?ln:rs,text=[...host.querySelectorAll('.wd')].map(x=>x.textContent).join(' ');
+  document.querySelectorAll('.sel').forEach(x=>x.classList.remove('sel'));
+  if(wd){wd.classList.add('sel');showWord(tapNorm(wd.textContent),text);return;}
+  host.classList.add('sel');
+  if(isLn&&typeof DL!=='undefined'&&DL&&DL.sel>=0){const idx=+ln.id.slice(2),line=DATA[DL.lvl].dl[DL.sel].l[idx];if(line){sentSheet(text,String(line.tr).replace(ZW,''),()=>sayRole(String(line.en).replace(ZW,''),line.s==='A'?'A':'B',-1));return;}}
+  sentSheet(text,'',()=>say(text,.9));
+});
 
 const AU={on:false,tok:0};
 function stopAudio(){AU.tok++;AU.on=false;try{if(canWeb)speechSynthesis.cancel();}catch(e){}}
@@ -826,7 +864,7 @@ function rReader(){
   }
   $('#txt').onclick=ev=>{
     const sn=ev.target.closest('.sn');if(!sn)return;const i=+sn.dataset.i,sent=en[i].replace(ZW,'');
-    if(RD.mode==='s'){stopAudio();say(sent,RD.rate);document.querySelectorAll('.sn').forEach(e=>e.style.background='');sn.style.background='#e0e7ff';return;}
+    if(RD.mode==='s'){stopAudio();say(sent,RD.rate);document.querySelectorAll('.sn').forEach(e=>e.style.background='');sn.style.background='#e0e7ff';sentSheet(sent,tal&&ttr[i]?ttr[i].replace(ZW,''):'',()=>say(sent,RD.rate));return;}
     const wd=ev.target.closest('.wd');if(!wd)return;showWord(wd.dataset.w,sent);
     document.querySelectorAll('.wd').forEach(e=>e.style.background='');wd.style.background='#fde68a';
   };
@@ -837,12 +875,13 @@ function rReader(){
 let PRE=false;
 async function preloadAll(){if(PRE)return;PRE=true;for(const l of LEVELS){if(LK[l]&&!DATA[l])await loadLevel(l);}}
 function showWord(w,sent){
-  stopAudio();say(w,.8);const e=lookup(w),box=$('#wp');if(!box)return;
+  stopAudio();say(w,.8);const e=lookup(w),box=sheetBox();
   const have=e&&S.nb[e.w.toLowerCase()]||S.nb[w];
   box.innerHTML=`<div id="wsheet" style="position:fixed;left:10px;right:10px;bottom:84px;background:#fff;border-radius:16px;padding:14px;box-shadow:0 4px 24px rgba(0,0,0,.25);z-index:8;max-width:540px;margin:0 auto"><div class="row"><b style="font-size:20px;flex:1">${esc(e?e.w:w)} <span class="small">${ipaOf(e?e.w:w)?'/'+esc(ipaOf(e?e.w:w))+'/':''}</span></b><button class="ghost sm" id="wc">✕</button></div>
-  ${e?`<div style="font-size:18px;margin:4px 0">🇹🇷 ${esc(e.tr)}</div>`:`<div class="small" style="margin:4px 0">Hazır sözlükte yok. İstersen kendin Türkçesini yazıp ekleyebilirsin.</div><input id="wtr" placeholder="Türkçesi" style="width:100%;font:inherit;padding:9px;border:2px solid var(--line);border-radius:12px;margin:4px 0">`}
+  ${e?`<div style="font-size:18px;margin:4px 0">🇹🇷 ${esc(e.tr)}</div>`:`<div id="wol" class="small" style="margin:4px 0">⏳ Anlamı aranıyor…</div><input id="wtr" placeholder="Türkçesi" style="width:100%;font:inherit;padding:9px;border:2px solid var(--line);border-radius:12px;margin:4px 0">`}
   <div class="row" style="margin-top:6px"><button class="ghost" id="wsp">🔊</button><button id="wadd" ${have?'disabled':''}>${have?'✓ Defterinde':'📒 Deftere ekle'}</button></div></div>`;
-  $('#wc').onclick=()=>{box.innerHTML='';document.querySelectorAll('.wd').forEach(x=>x.style.background='');};
+  $('#wc').onclick=()=>{closeSheet();document.querySelectorAll('.wd').forEach(x=>x.style.background='');};
+  if(!e)meanOnline(w).then(r=>{const o=$('#wol');if(!o)return;if(r){o.className='';o.style.fontSize='18px';o.innerHTML='🇹🇷 '+esc(r)+' <span class="small">(otomatik çeviri)</span>';const i=$('#wtr');if(i)i.value=r;}else o.textContent='Sözlükte yok, çevrimiçi de bulunamadı. İstersen Türkçesini kendin yazıp ekleyebilirsin.';});
   $('#wsp').onclick=()=>say(w,.8);
   $('#wadd').onclick=()=>{const tr=e?e.tr:($('#wtr').value||'').trim();if(!tr){toast('Türkçesini yaz');return;}
     const ok=nbAdd(e?e.w:w,tr,sent);toast(ok?'📒 Deftere eklendi':'Zaten defterinde');if(ok)xpa(2);$('#wadd').disabled=true;$('#wadd').textContent='✓ Defterinde';};
