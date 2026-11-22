@@ -34,6 +34,7 @@ nav button{flex:1;background:none;color:var(--mut);font-size:12px;padding:6px 2p
 textarea{width:100%;font:inherit;border:2px solid var(--line);border-radius:12px;padding:10px;resize:none}
 .lv{display:inline-block;background:var(--pri);color:#fff;border-radius:8px;padding:2px 9px;font-weight:800}
 .small{font-size:13px;color:var(--mut)}
+.wd,.wt{transition:background .12s,box-shadow .12s}.wd.on{background:#fde047;box-shadow:0 0 0 2px #fde047;border-radius:4px;color:#111}.wt.on{background:#86efac;box-shadow:0 0 0 2px #86efac;border-radius:4px;color:#111}
 </style>
 </head>
 <body>
@@ -731,6 +732,56 @@ async function rCloze(){
 }
 // ---- hikâye okuyucu: kelimeye dokun + baştan sona dinleme ----
 const RD={mode:'w',rate:.7};
+// ---- Diyalog: iki ayrı ses (A erkek, B kadın) + kelime vurgusu ----
+function dlgVoice(role){
+  const l=(typeof vList==='function'?vList():[]);
+  const F=/female|woman|femme|mujer|mulher|frau|женск|jenny|aria|sara\b|paulina|helena|m[oó]nica|luc[ií]a|elena|marie|am[eé]lie|denise|julie|hortense|svetlana|светлана|katya|екатерина|tatyana|irina|ирина|milena|samantha|zira|susan|elvira|salome|dalia|elsa|vivienne|brigitte|claire|laura|paloma|ximena|camila|google.*\bf\b/i;
+  const M=/\bmale\b|\bman\b|homme|hombre|мужск|david|mark\b|pablo|jorge|diego|[aá]lvaro|henri|paul\b|claude|thomas|maxim|pavel|yuri|daniel|alex\b|guy\b|ryan|george|antoine|jean\b|fabrice|oliver|ra[uú]l|enrique|juan\b|carlos|dmitri|dmitry|mikhail|николай|павел|дмитрий/i;
+  const fem=l.find(v=>F.test(v.name||'')),mal=l.find(v=>!F.test(v.name||'')&&M.test(v.name||''));
+  let A,B,pa=1,pb=1;
+  if(fem&&mal){A=mal;B=fem;}
+  else if(fem){B=fem;A=l.find(v=>v!==fem);if(!A){A=fem;pa=.8;pb=1.2;}else{pa=.85;}}
+  else if(mal){A=mal;B=l.find(v=>v!==mal);if(!B){B=mal;pa=.8;pb=1.2;}else{pb=1.15;}}
+  else if(l.length>1){A=l[0];B=l[1];pa=.85;pb=1.15;}
+  else{A=B=l[0]||null;pa=.8;pb=1.2;}
+  return role==='A'?{v:A,p:pa}:{v:B,p:pb};
+}
+function dlgU(t,role,rate){
+  const u=new SpeechSynthesisUtterance(t);u.lang=VL;const d=dlgVoice(role);
+  try{if(d.v){u.voice=d.v;u.lang=d.v.lang;}}catch(e){}u.pitch=d.p;u.rate=rate;return u;}
+function dlgHL(i,wi){
+  const a=document.getElementById('ln'+i);if(!a)return;
+  a.querySelectorAll('.wd.on,.wt.on').forEach(x=>x.classList.remove('on'));
+  if(wi<0)return;
+  const ws=a.querySelectorAll('.wd'),ts=a.querySelectorAll('.wt');
+  if(ws[wi])ws[wi].classList.add('on');
+  if(ts.length&&ws.length){const n=ws.length,m=ts.length,s=Math.min(m-1,Math.floor(wi*m/n)),e=Math.max(s,Math.min(m-1,Math.ceil((wi+1)*m/n)-1));for(let k=s;k<=e;k++)ts[k].classList.add('on');}
+}
+function dlgSpan(t,c){return String(t).split(/\s+/).filter(Boolean).map(w=>`<span class="${c}">${esc(w)}</span>`).join(' ');}
+function playDlg(L,rate,o){
+  o=o||{};const off=o.off||0;
+  if(!canWeb){o.done&&o.done();return;}
+  stopAudio();const tok=AU.tok;AU.on=true;let i=0;
+  const step=()=>{
+    if(tok!==AU.tok)return;
+    if(i>=L.length){AU.on=false;o.done&&o.done();return;}
+    const e=L[i],t=String(e.en).replace(ZW,''),role=e.s==='A'?'A':'B',idx=i+off;
+    o.onIdx&&o.onIdx(idx);
+    const st=[];t.replace(/\S+/g,(w,p)=>{st.push(p);return w;});
+    let adv=false,timer=null,w=null,viaB=false,t0=0,last=-1;
+    const hl=k=>{if(k!==last){last=k;dlgHL(idx,k);}};
+    const nx=()=>{if(adv||tok!==AU.tok)return;adv=true;clearInterval(timer);clearTimeout(w);dlgHL(idx,-1);i++;setTimeout(step,550);};
+    try{
+      const u=dlgU(t,role,rate);
+      u.onstart=()=>{t0=Date.now();clearInterval(timer);timer=setInterval(()=>{if(viaB)return;const c=(Date.now()-t0)/(72/rate);let k=0;for(let j=0;j<st.length;j++)if(st[j]<=c)k=j;hl(k);},90);hl(0);};
+      u.onboundary=ev=>{if(ev.name&&ev.name!=='word')return;viaB=true;let k=0;for(let j=0;j<st.length;j++)if(st[j]<=ev.charIndex)k=j;hl(k);};
+      u.onend=nx;u.onerror=nx;speechSynthesis.speak(u);
+    }catch(x){nx();}
+    w=setTimeout(nx,Math.max(3000,t.split(' ').length*650/rate+2500));};
+  try{speechSynthesis.cancel();speechSynthesis.resume();}catch(e){}setTimeout(step,300);
+}
+function sayRole(t,role,idx){playDlg([{en:t,s:role}],.85,{off:idx||0});}
+
 const AU={on:false,tok:0};
 function stopAudio(){AU.tok++;AU.on=false;try{if(canWeb)speechSynthesis.cancel();}catch(e){}}
 function playSeq(sents,rate,onIdx,done){
@@ -1164,14 +1215,15 @@ async function rDlg(){
     wire();$('#bk').onclick=toWork;document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{DL.sel=+b.dataset.i;DL.m='r';DL.tr=false;rDlg();});return;}
   const x=list[DL.sel],L=x.l,nB=L.filter((_,j)=>j%2).length;
   const back=()=>{stopAudio();DL.sel=-1;rDlg();};
-  const bub=(e,i,hide)=>`<div style="display:flex;justify-content:${e.s==='A'?'flex-start':'flex-end'};margin:6px 0"><div class="card" id="ln${i}" style="max-width:85%;margin:0;padding:8px 12px;background:${e.s==='A'?'#fff':'#e0e7ff'}"><div class="small" style="opacity:.6">${e.s==='A'?'Karşı taraf':'Sen'}</div>${hide?'<i>…</i>':`<div>${esc(cl(e.en))}</div>${DL.tr?`<div class="small">${esc(cl(e.tr))}</div>`:''}`}</div></div>`;
+  const bub=(e,i,hide)=>`<div style="display:flex;justify-content:${e.s==='A'?'flex-start':'flex-end'};margin:6px 0"><div class="card" id="ln${i}" style="max-width:85%;margin:0;padding:8px 12px;background:${e.s==='A'?'#fff':'#e0e7ff'}"><div class="small" style="opacity:.6">${e.s==='A'?'Karşı taraf':'Sen'}</div>${hide?'<i>…</i>':`<div>${dlgSpan(cl(e.en),'wd')}</div>${DL.tr?`<div class="small">${dlgSpan(cl(e.tr),'wt')}</div>`:''}`}</div></div>`;
   if(DL.m==='r'){
     $('#app').innerHTML=`<button class="ghost sm" id="bk">← Liste</button><h2>💬 ${esc(cl(x.t))}</h2>${sceneSvg(cl(x.t))}
     <div>${L.map((e,i)=>bub(e,i,false)).join('')}</div>
     <div class="row" style="margin-top:10px"><button id="pl">🔊 Dinle</button><button class="ghost" id="st" style="display:none">⏹ Durdur</button><button class="ghost" id="tg">${DL.tr?'Türkçeyi gizle':'Türkçeyi göster'}</button></div>
     <button id="go" style="width:100%;margin-top:8px;background:#16a34a">🎭 Rol yap (B sensin)</button>`;
     $('#bk').onclick=back;$('#tg').onclick=()=>{DL.tr=!DL.tr;rDlg();};
-    $('#pl').onclick=()=>{$('#pl').style.display='none';$('#st').style.display='';playSeq(L.map(e=>cl(e.en)),.85,i=>{document.querySelectorAll('[id^=ln]').forEach(n=>n.style.outline='');const n=$('#ln'+i);if(n){n.style.outline='2px solid #4f46e5';n.scrollIntoView({block:'center',behavior:'smooth'});}},()=>{if($('#pl')){$('#pl').style.display='';$('#st').style.display='none';}});};
+    $('#pl').onclick=()=>{if(!DL.tr){DL.tr=true;DL.auto=true;rDlg();return;}$('#pl').style.display='none';$('#st').style.display='';playDlg(L,.85,{onIdx:i=>{document.querySelectorAll('[id^=ln]').forEach(n=>n.style.outline='');const n=$('#ln'+i);if(n){n.style.outline='2px solid #4f46e5';n.scrollIntoView({block:'center',behavior:'smooth'});}},done:()=>{if($('#pl')){$('#pl').style.display='';$('#st').style.display='none';}}});};
+    if(DL.auto){DL.auto=false;setTimeout(()=>{const b=$('#pl');if(b)b.click();},50);}
     $('#st').onclick=()=>{stopAudio();$('#st').style.display='none';$('#pl').style.display='';};
     $('#go').onclick=()=>{DL.m='p';DL.k=0;DL.ok=0;DL.first=true;DL.opts=null;rDlg();};return;}
   // rol yapma
@@ -1183,7 +1235,7 @@ async function rDlg(){
   const cur=L[DL.k];
   if(cur.s==='A'){
     $('#app').innerHTML=`<button class="ghost sm" id="bk">← Liste</button><p class="sub">🎭 ${esc(cl(x.t))} • rol yapma</p><div class="bar"><i style="width:${DL.k/L.length*100}%"></i></div>${sceneSvg(cl(x.t))}${shown.map((e,i)=>bub(e,i,false)).join('')}${bub(cur,DL.k,false)}<button id="nx" style="width:100%;margin-top:8px">Devam ➜</button>`;
-    $('#bk').onclick=()=>{DL.m='r';rDlg();};say(cl(cur.en));$('#nx').onclick=()=>{DL.k++;DL.opts=null;DL.first=true;rDlg();};return;}
+    $('#bk').onclick=()=>{DL.m='r';rDlg();};playDlg([{en:cl(cur.en),s:'A'}],.85,{off:DL.k});$('#nx').onclick=()=>{DL.k++;DL.opts=null;DL.first=true;rDlg();};return;}
   if(!DL.opts){
     const others=[];list.forEach((q,qi)=>{if(qi!==DL.sel)q.l.forEach((e,j)=>{if(e.s==='B'&&e.en!==cur.en)others.push(e.en);});});
     DL.opts=shuffle([cur.en,...shuffle(others).slice(0,2)]);}
@@ -1192,7 +1244,7 @@ async function rDlg(){
   $('#bk').onclick=()=>{DL.m='r';rDlg();};
   document.querySelectorAll('#os .opt').forEach(b=>b.onclick=()=>{
     const o=DL.opts[+b.dataset.i];if(DL.done)return;
-    if(o===cur.en){DL.done=true;if(DL.first)DL.ok++;xpa(1);say(cl(cur.en));
+    if(o===cur.en){DL.done=true;if(DL.first)DL.ok++;xpa(1);sayRole(cl(cur.en),'B',-1);
       document.querySelectorAll('#os .opt').forEach(z=>{if(DL.opts[+z.dataset.i]===cur.en)z.classList.add('ok');});
       $('#nx').innerHTML=`<button id="nb">Devam ➜</button>`;$('#nb').onclick=()=>{DL.done=false;DL.k++;DL.opts=null;DL.first=true;rDlg();};}
     else{DL.first=false;b.classList.add('bad');b.disabled=true;}});
