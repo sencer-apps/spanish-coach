@@ -822,6 +822,38 @@ document.addEventListener('click',ev=>{
   if(isLn&&typeof DL!=='undefined'&&DL&&DL.sel>=0){const idx=+ln.id.slice(2),line=DATA[DL.lvl].dl[DL.sel].l[idx];if(line){sentSheet(text,String(line.tr).replace(ZW,''),()=>sayRole(String(line.en).replace(ZW,''),line.s==='A'?'A':'B',-1));return;}}
   sentSheet(text,'',()=>say(text,.9));
 });
+// ---- genel dokunma: düz metindeki herhangi bir hedef dil kelimesi ----
+const TRF=new Set('ve bir bu için ile değil ben sen biz siz çok ama gibi daha veya var yok bunu şu onu benim senin nasıl neden kim hangi olarak sonra önce evet hayır lütfen teşekkürler merhaba'.split(' '));
+function isTRtext(t){if(/[ığşİĞŞ]/.test(t))return true;return t.toLowerCase().split(/[^\p{L}]+/u).filter(Boolean).some(w=>TRF.has(w));}
+function isTargetText(t){if(VL.startsWith('ru'))return /[а-яё]/i.test(t);return /\p{L}/u.test(t)&&!isTRtext(t);}
+document.addEventListener('click',ev=>{
+  try{
+    if(['exam','test','quiz','duel'].includes(view))return;
+    const t=ev.target;if(!t||!t.closest||!t.closest('#app'))return;
+    if(t.closest('button,a,input,select,textarea,label,#wsheet,.wd,.sn,.tn,svg,.opt'))return;
+    const lnA=t.closest('[id^=ln]');if(lnA&&/^ln\d+$/.test(lnA.id))return;
+    for(let e=t;e&&e.id!=='app';e=e.parentElement){if(getComputedStyle(e).cursor==='pointer')return;}
+    let node,off;
+    if(document.caretRangeFromPoint){const r=document.caretRangeFromPoint(ev.clientX,ev.clientY);if(!r)return;node=r.startContainer;off=r.startOffset;}
+    else if(document.caretPositionFromPoint){const r=document.caretPositionFromPoint(ev.clientX,ev.clientY);if(!r)return;node=r.offsetNode;off=r.offset;}
+    else return;
+    if(!node||node.nodeType!==3)return;
+    const txt=node.textContent,isW=c=>/[\p{L}\p{N}'’-]/u.test(c||'');
+    let a=off,b=off;if(!isW(txt[a])&&isW(txt[a-1])){a--;b--;}
+    while(a>0&&isW(txt[a-1]))a--;while(b<txt.length&&isW(txt[b]))b++;
+    if(a>=b)return;
+    const rg=document.createRange();rg.setStart(node,a);rg.setEnd(node,b);
+    if(![...rg.getClientRects()].some(q=>ev.clientX>=q.left-4&&ev.clientX<=q.right+4&&ev.clientY>=q.top-4&&ev.clientY<=q.bottom+4))return;
+    const word=txt.slice(a,b);
+    let el=node.parentElement;while(el&&el!==document.body&&getComputedStyle(el).display.startsWith('inline'))el=el.parentElement;
+    const full=(el&&el.innerText)||txt;
+    const chunks=full.split(/(?<=[.!?…])\s+|[\n=|•→]+/).map(x=>x.trim()).filter(Boolean);
+    const lw=word.toLowerCase(),chunk=chunks.find(c=>c.toLowerCase().includes(lw))||txt;
+    if(!isTargetText(word)||!isTargetText(chunk))return;
+    const w=tapNorm(word);if(!w)return;
+    showWord(w,chunk);
+  }catch(e){}
+});
 
 const AU={on:false,tok:0};
 function stopAudio(){AU.tok++;AU.on=false;try{if(canWeb)speechSynthesis.cancel();}catch(e){}}
@@ -879,10 +911,11 @@ function showWord(w,sent){
   const have=e&&S.nb[e.w.toLowerCase()]||S.nb[w];
   box.innerHTML=`<div id="wsheet" style="position:fixed;left:10px;right:10px;bottom:84px;background:#fff;border-radius:16px;padding:14px;box-shadow:0 4px 24px rgba(0,0,0,.25);z-index:8;max-width:540px;margin:0 auto"><div class="row"><b style="font-size:20px;flex:1">${esc(e?e.w:w)} <span class="small">${ipaOf(e?e.w:w)?'/'+esc(ipaOf(e?e.w:w))+'/':''}</span></b><button class="ghost sm" id="wc">✕</button></div>
   ${e?`<div style="font-size:18px;margin:4px 0">🇹🇷 ${esc(e.tr)}</div>`:`<div id="wol" class="small" style="margin:4px 0">⏳ Anlamı aranıyor…</div><input id="wtr" placeholder="Türkçesi" style="width:100%;font:inherit;padding:9px;border:2px solid var(--line);border-radius:12px;margin:4px 0">`}
-  <div class="row" style="margin-top:6px"><button class="ghost" id="wsp">🔊</button><button id="wadd" ${have?'disabled':''}>${have?'✓ Defterinde':'📒 Deftere ekle'}</button></div></div>`;
+  <div class="row" style="margin-top:6px"><button class="ghost" id="wsp">🔊</button>${sent&&String(sent).trim().split(/\s+/).length>1?'<button class="ghost" id="wse">📄 Cümlenin anlamı</button>':''}<button id="wadd" ${have?'disabled':''}>${have?'✓ Defterinde':'📒 Deftere ekle'}</button></div></div>`;
   $('#wc').onclick=()=>{closeSheet();document.querySelectorAll('.wd').forEach(x=>x.style.background='');};
   if(!e)meanOnline(w).then(r=>{const o=$('#wol');if(!o)return;if(r){o.className='';o.style.fontSize='18px';o.innerHTML='🇹🇷 '+esc(r)+' <span class="small">(otomatik çeviri)</span>';const i=$('#wtr');if(i)i.value=r;}else o.textContent='Sözlükte yok, çevrimiçi de bulunamadı. İstersen Türkçesini kendin yazıp ekleyebilirsin.';});
   $('#wsp').onclick=()=>say(w,.8);
+  if($('#wse'))$('#wse').onclick=()=>sentSheet(sent,'',()=>say(sent,.8));
   $('#wadd').onclick=()=>{const tr=e?e.tr:($('#wtr').value||'').trim();if(!tr){toast('Türkçesini yaz');return;}
     const ok=nbAdd(e?e.w:w,tr,sent);toast(ok?'📒 Deftere eklendi':'Zaten defterinde');if(ok)xpa(2);$('#wadd').disabled=true;$('#wadd').textContent='✓ Defterinde';};
 }
