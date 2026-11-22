@@ -93,10 +93,10 @@ function pv(u){try{let pick=null;let sv=null;try{sv=localStorage.getItem('vc_'+V
 let view='home';
 const HASNET=typeof Peer!=='undefined';
 const NAV=[['home','🏠','Ana'],['story','📖','Hikâye'],['work','🧠','Çalış']].concat(HASNET?[['duel','⚔️','Yarış']]:[],[['prog','📊','İlerleme']]);
-const WORKV=['cards','quiz','nb','nbr','dict','speak','cloze','mis','tr','irr','dlg','gr','pic','ph','em','num','pron','ten','rdy','cult','sen','kal','kq','gap','wri','plan','srs','lis'];
+const WORKV=['cards','quiz','nb','nbr','dict','speak','cloze','mis','tr','irr','dlg','gr','pic','ph','em','num','pron','ten','rdy','cult','sen','kal','kq','gap','wri','plan','srs','lis','itp'];
 function renderNav(){$('#nav').innerHTML=NAV.map(n=>`<button data-v="${n[0]}" class="${view===n[0]||(view==='test'&&n[0]==='home')||(SUBV.includes(view)&&n[0]==='story')||(WORKV.includes(view)&&n[0]==='work')?'on':''}"><b>${n[1]}</b>${n[2]}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{view=b.dataset.v;render();});}
-function render(){stopAudio();if(view!=='duel'&&DU&&!DU.keep)duelLeave();renderNav();({home:rHome,cards:rCards,quiz:rQuiz,chat:rChat,test:rTest,duel:rDuel,story:rStoryHome,reader:rReader,build:rBuild,prac:rPrac,help:rHelp,pdk:rPdk,exam:rExam,work:rWork,nb:rNb,nbr:rNbr,dict:rDict,speak:rSpeak,cloze:rCloze,mis:rMis,tr:rTr,irr:rIrr,dlg:rDlg,gr:rGr,pic:rPic,ph:rPh,em:rEm,num:rNum,pron:rPron,ten:rTen,rdy:rRdy,cult:rCult,sen:rSen,kal:rKal,kq:rKq,gap:rGap,wri:rWri,plan:rPlan,srs:rSrs,lis:rLis,prog:rProg})[view]();window.scrollTo(0,0);}
+function render(){stopAudio();if(view!=='duel'&&DU&&!DU.keep)duelLeave();renderNav();({home:rHome,cards:rCards,quiz:rQuiz,chat:rChat,test:rTest,duel:rDuel,story:rStoryHome,reader:rReader,build:rBuild,prac:rPrac,help:rHelp,pdk:rPdk,exam:rExam,work:rWork,nb:rNb,nbr:rNbr,dict:rDict,speak:rSpeak,cloze:rCloze,mis:rMis,tr:rTr,irr:rIrr,dlg:rDlg,gr:rGr,pic:rPic,ph:rPh,em:rEm,num:rNum,pron:rPron,ten:rTen,rdy:rRdy,cult:rCult,sen:rSen,kal:rKal,kq:rKq,gap:rGap,wri:rWri,plan:rPlan,srs:rSrs,lis:rLis,itp:rItp,prog:rProg})[view]();window.scrollTo(0,0);}
 const chips=()=>`<div class="row">${LEVELS.map(l=>`<button class="chip ${l===S.lvl?'sel':''}" data-l="${l}">${l}</button>`).join('')}</div>`;
 const tchips=()=>`<div class="row">${Object.entries(TOPICS).map(([k,v])=>`<button class="chip ${k===S.topic?'sel':''}" data-t="${k}">${v.ic} ${v.n}</button>`).join('')}</div>`;
 function wire(){document.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{S.lvl=b.dataset.l;save();render();});document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S.topic=b.dataset.t;save();render();});}
@@ -816,10 +816,11 @@ function rWork(){
   <button id="w29" style="grid-column:span 2">🎧 Dinleme</button>
   <button id="w30" style="grid-column:span 2">📋 Konuşma Kalıpları</button>
   <button id="w31" style="grid-column:span 2">🧩 Boşluk Doldur</button>
-  <button id="w27" style="grid-column:span 2">📅 Bugünün Planı</button></div>`;
+  <button id="w27" style="grid-column:span 2">📅 Bugünün Planı</button>
+  <button id="w32" style="grid-column:span 2">🌐 Çevirmen (konuş, çevirsin)</button></div>`;
   wire();
   const go=(id,v,f)=>{const el=$('#'+id);if(el)el.onclick=()=>{view=v;if(f)f();render();};};
-  go('w1','nb');go('w2','dict');go('w3','speak');go('w5','mis',()=>{MR=null;});go('w6','cards');go('w7','quiz',()=>{qz=null;});go('w8','tr');go('w9','irr',()=>{IR=null;});go('w10','dlg',()=>{if(DL)DL.sel=-1;});go('w11','gr',()=>{if(GR)GR.sel=-1;});go('w12','pic',()=>{PQ=null;});go('w13','ph',()=>{PH=null;});go('w14','em',()=>{EM=null;});go('w15','num',()=>{NQ=null;});go('w16','pron',()=>{PN=null;});go('w17','ten',()=>{TQ2=null;});go('w18','rdy',()=>{RDY=null;});go('w25','sen',()=>{SN=null;});go('w26','wri',()=>{WR=null;});go('w27','plan');go('w28','srs',()=>{SR2=null;});go('w29','lis',()=>{LS=null;});go('w30','kal',()=>{KL=null;});go('w31','gap',()=>{GP=null;});go('w23','cult',()=>{CU={tab:'prv',q:null};});
+  go('w1','nb');go('w2','dict');go('w3','speak');go('w5','mis',()=>{MR=null;});go('w6','cards');go('w7','quiz',()=>{qz=null;});go('w8','tr');go('w9','irr',()=>{IR=null;});go('w10','dlg',()=>{if(DL)DL.sel=-1;});go('w11','gr',()=>{if(GR)GR.sel=-1;});go('w12','pic',()=>{PQ=null;});go('w13','ph',()=>{PH=null;});go('w14','em',()=>{EM=null;});go('w15','num',()=>{NQ=null;});go('w16','pron',()=>{PN=null;});go('w17','ten',()=>{TQ2=null;});go('w18','rdy',()=>{RDY=null;});go('w25','sen',()=>{SN=null;});go('w26','wri',()=>{WR=null;});go('w27','plan');go('w32','itp',()=>{ITP=null;});go('w28','srs',()=>{SR2=null;});go('w29','lis',()=>{LS=null;});go('w30','kal',()=>{KL=null;});go('w31','gap',()=>{GP=null;});go('w23','cult',()=>{CU={tab:'prv',q:null};});
 }
 // ---- ilerleme ----
 const TOT={A1:20,A2:20,B1:14,B2:16,C1:8,C2:5};
@@ -1986,6 +1987,62 @@ function rCult(){
   const quizBtn=CU.tab!=='kul'?`<button id="qz" style="margin-bottom:8px">🎯 Test et (10 soru)</button>`:'';
   $('#app').innerHTML=hd+`<h2>🇪🇸 Kültür & Deyimler</h2>${chips}${quizBtn}${body}`;
   bind();if($('#qz'))$('#qz').onclick=()=>{CU.q=cuQuiz(CU.tab);rCult();};
+}
+
+const ITP_L={lc:'es-ES',tl:'es',n:'İspanyolca',fl:'🇪🇸'};
+// ---- Çevirmen (ardışık çeviri): konuşma → çeviri → sesli okuma ----
+let ITP=null,ITR=null;
+function itpTTS(t,lang){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=lang;const vs=(speechSynthesis.getVoices()||[]).filter(v=>String(v.lang).toLowerCase().replace('_','-').startsWith(lang.slice(0,2).toLowerCase()));if(vs[0])u.voice=vs[0];u.rate=.95;speechSynthesis.speak(u);}catch(e){}}
+async function itpTr(text,from,to){
+  try{if(self.Translator&&Translator.availability){const av=await Translator.availability({sourceLanguage:from,targetLanguage:to});if(av==='available'){const r=await Promise.race([(async()=>{const tr=await Translator.create({sourceLanguage:from,targetLanguage:to});return await tr.translate(text);})(),new Promise((_,rej)=>setTimeout(()=>rej(0),4000))]);if(r)return{t:r,via:'cihaz'};}}}catch(e){}
+  const tmo=async(url)=>{const c=new AbortController();const id=setTimeout(()=>c.abort(),7000);try{const r=await fetch(url,{signal:c.signal});return await r.json();}finally{clearTimeout(id);}};
+  try{const j=await tmo('https://translate.googleapis.com/translate_a/single?client=gtx&sl='+from+'&tl='+to+'&dt=t&q='+encodeURIComponent(text));const o=(j[0]||[]).map(x=>x[0]).join('');if(o)return{t:o,via:'çevrimiçi'};}catch(e){}
+  try{const j=await tmo('https://api.mymemory.translated.net/get?q='+encodeURIComponent(text)+'&langpair='+from+'|'+to);const o=j&&j.responseData&&j.responseData.translatedText;if(o)return{t:o,via:'çevrimiçi 2'};}catch(e){}
+  return null;}
+async function itpDo(text,dir){
+  text=String(text||'').trim();if(!text)return;
+  const from=dir==='x'?ITP_L.tl:'tr',to=dir==='x'?'tr':ITP_L.tl;
+  ITP.busy=true;ITP.msg='';rItp();
+  const r=await itpTr(text,from,to);
+  ITP.busy=false;ITP.listening=null;
+  if(!r){ITP.msg='Çeviri yapılamadı. İnternet bağlantını kontrol et ve tekrar dene.';rItp();return;}
+  ITP.log.unshift({dir,src:text,out:r.t,via:r.via});ITP.log=ITP.log.slice(0,30);
+  rItp();
+  if(ITP.auto){if(dir==='x')itpTTS(r.t,'tr-TR');else itpTTS(r.t,ITP_L.lc);}
+}
+function itpListen(dir){
+  try{speechSynthesis.cancel();}catch(e){}
+  if(!SR){ITP.msg='Bu tarayıcı mikrofonla konuşmayı desteklemiyor. Aşağıya yazarak çevirebilirsin.';rItp();return;}
+  let got=false;ITR=new SR();ITR.lang=dir==='x'?ITP_L.lc:'tr-TR';ITR.interimResults=false;ITR.maxAlternatives=1;
+  ITP.listening=dir;ITP.msg='';rItp();
+  ITR.onresult=e=>{got=true;try{itpDo(e.results[0][0].transcript,dir);}catch(x){}};
+  ITR.onerror=e=>{ITP.listening=null;ITP.msg=(e.error==='not-allowed'||e.error==='service-not-allowed')?'Mikrofon izni verilmedi. Tarayıcı ayarlarından izin ver.':(e.error==='no-speech'?'Ses duyulmadı, tekrar dene.':'Mikrofon hatası: '+(e.error||''));rItp();};
+  ITR.onend=()=>{if(!got&&ITP.listening){ITP.listening=null;if(!ITP.msg)ITP.msg='Ses duyulmadı, tekrar dene.';rItp();}};
+  try{ITR.start();}catch(e){ITP.listening=null;ITP.msg='Mikrofon başlatılamadı.';rItp();}
+}
+function rItp(){
+  if(!ITP)ITP={log:[],listening:null,busy:false,msg:'',auto:true,txt:''};
+  const L=ITP.listening,B=ITP.busy;
+  $('#app').innerHTML=`<button class="ghost sm" id="bk">← Çalış</button><h2>🌐 Çevirmen</h2>
+  <p class="sub">${ITP_L.n} ↔ Türkçe • konuş, çevirsin, sesli okusun</p>
+  <div class="row" style="gap:10px;margin:8px 0">
+    <button id="itX" ${L||B?'disabled':''} style="flex:1;padding:18px 6px;font-size:16px;background:${L==='x'?'#db2777':'var(--pri)'}">${L==='x'?'🎙️ Dinliyorum…':ITP_L.fl+' Karşı taraf<br><span class="small" style="color:#fff">'+ITP_L.n+' → Türkçe</span>'}</button>
+    <button id="itT" ${L||B?'disabled':''} style="flex:1;padding:18px 6px;font-size:16px;background:${L==='t'?'#db2777':'#059669'}">${L==='t'?'🎙️ Dinliyorum…':'🇹🇷 Ben<br><span class="small" style="color:#fff">Türkçe → '+ITP_L.n+'</span>'}</button>
+  </div>
+  ${B?'<div class="card small">⏳ Çevriliyor…</div>':''}
+  ${ITP.msg?`<div class="card" style="background:#fffbeb">${esc(ITP.msg)}</div>`:''}
+  <div class="card"><label class="small"><input type="checkbox" id="itA" ${ITP.auto?'checked':''}> Çeviriyi sesli oku</label>
+    <div style="display:flex;gap:6px;margin-top:8px"><input id="itI" placeholder="Ya da buraya yaz…" value="${esc(ITP.txt||'')}" style="flex:1;font:inherit;padding:10px;border:2px solid var(--line);border-radius:12px"></div>
+    <div class="row" style="margin-top:8px"><button class="ghost sm" id="itWx">${ITP_L.n} → Türkçe</button><button class="ghost sm" id="itWt">Türkçe → ${ITP_L.n}</button></div></div>
+  ${ITP.log.map((x,i)=>`<div class="card"><div class="small">${x.dir==='x'?ITP_L.fl+' '+ITP_L.n+' → 🇹🇷':'🇹🇷 → '+ITP_L.fl}</div><div style="margin:4px 0">${esc(x.src)}</div><div style="font-size:19px;font-weight:700;line-height:1.4">${esc(x.out)}</div><div class="row" style="margin-top:6px"><button class="ghost sm" data-itp="${i}">🔊 Tekrar dinle</button><span class="small" style="align-self:center">${esc(x.via)}</span></div></div>`).join('')}
+  <p class="small">Not: Çeviri otomatiktir, önemli konularda doğrulayın. Çeviri için yazdıkların ücretsiz bir çeviri servisine gönderilebilir.</p>`;
+  $('#bk').onclick=()=>{try{ITR&&ITR.abort();}catch(e){}try{speechSynthesis.cancel();}catch(e){}ITP=null;toWork();};
+  $('#itX').onclick=()=>itpListen('x');$('#itT').onclick=()=>itpListen('t');
+  $('#itA').onchange=e=>{ITP.auto=e.target.checked;};
+  $('#itI').oninput=e=>{ITP.txt=e.target.value;};
+  $('#itWx').onclick=()=>{const t=ITP.txt;ITP.txt='';itpDo(t,'x');};
+  $('#itWt').onclick=()=>{const t=ITP.txt;ITP.txt='';itpDo(t,'t');};
+  document.querySelectorAll('[data-itp]').forEach(b=>b.onclick=()=>{const x=ITP.log[+b.dataset.itp];if(x)itpTTS(x.out,x.dir==='x'?'tr-TR':ITP_L.lc);});
 }
 
 let NQ=null;
