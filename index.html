@@ -103,9 +103,10 @@ function render(){stopAudio();closeSheet();if(view!=='duel'&&DU&&!DU.keep)duelLe
 const chips=()=>`<div class="row">${LEVELS.map(l=>`<button class="chip ${l===S.lvl?'sel':''}" data-l="${l}">${l}</button>`).join('')}</div>`;
 const tchips=()=>`<div class="row">${Object.entries(TOPICS).map(([k,v])=>`<button class="chip ${k===S.topic?'sel':''}" data-t="${k}">${v.ic} ${v.n}</button>`).join('')}</div>`;
 function wire(){document.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{S.lvl=b.dataset.l;save();render();});document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S.topic=b.dataset.t;save();render();});}
+function hubLink(){try{if(localStorage.getItem('dk_hub'))return '<p style="margin:-6px 0 10px"><a href="https://sencer-apps.github.io/?hub=1" style="font-size:14px;font-weight:600;text-decoration:none">🌐 Dil değiştir</a></p>';}catch(e){}return '';}
 function rHome(){
   const kn=Object.keys(S.known).length;
-  $('#app').innerHTML=`<h1>İspanyolca Koç</h1><p class="sub">A1'den C2'ye • Kelime • Dinleme • Konuşma</p>${restoreCard()}${goalCard()}${planCard()}
+  $('#app').innerHTML=`<h1>İspanyolca Koç</h1><p class="sub">A1'den C2'ye • Kelime • Dinleme • Konuşma</p>${hubLink()}${restoreCard()}${goalCard()}${planCard()}
   <div class="card"><b>Seviyen: <span class="lv">${S.lvl}</span> ${LVNAME[S.lvl]}</b><p class="sub">Seviyeyi istediğin zaman değiştirebilirsin.</p>${chips()}<div style="margin-top:10px"><button class="ghost" id="goTest">📝 ${S.tested?'Seviye testini tekrarla':'Seviyemi test et (3 dk)'}</button></div></div>
     <button id="gS" style="width:100%;margin:10px 0;padding:16px;font-size:18px">📖 Hikâyeler: İspanyolca okuma yolculuğu</button>
   <div class="grid"><button id="gW" style="grid-column:span 2">🧠 Çalış: Defter • Dinle-yaz • Konuşma</button><button id="gC">🃏 Kelime Kartları</button><button id="gQ">✅ Quiz</button>${HASNET?'<button id="gD" style="grid-column:span 2;background:#db2777">⚔️ Biriyle yarış</button>':''}</div>
