@@ -35,6 +35,7 @@ textarea{width:100%;font:inherit;border:2px solid var(--line);border-radius:12px
 .lv{display:inline-block;background:var(--pri);color:#fff;border-radius:8px;padding:2px 9px;font-weight:800}
 .small{font-size:13px;color:var(--mut)}
 .wd,.wt{transition:background .12s,box-shadow .12s}.wd.on{background:#fde047;box-shadow:0 0 0 2px #fde047;border-radius:4px;color:#111}.wt.on{background:#86efac;box-shadow:0 0 0 2px #86efac;border-radius:4px;color:#111}
+.tk{}.vr{transition:background .12s}.vr.on{background:#bbf7d0;border-radius:6px}.tn{border-radius:6px;transition:background .12s}
 </style>
 </head>
 <body>
@@ -749,13 +750,15 @@ function dlgVoice(role){
 function dlgU(t,role,rate){
   const u=new SpeechSynthesisUtterance(t);u.lang=VL;const d=dlgVoice(role);
   try{if(d.v){u.voice=d.v;u.lang=d.v.lang;}}catch(e){}u.pitch=d.p;u.rate=rate;return u;}
-function dlgHL(i,wi){
-  const a=document.getElementById('ln'+i);if(!a)return;
-  a.querySelectorAll('.wd.on,.wt.on').forEach(x=>x.classList.remove('on'));
+function hlWords(a,wi,ws,ts){
+  if(!a)return;a.querySelectorAll('.on').forEach(x=>x.classList.remove('on'));
   if(wi<0)return;
-  const ws=a.querySelectorAll('.wd'),ts=a.querySelectorAll('.wt');
   if(ws[wi])ws[wi].classList.add('on');
   if(ts.length&&ws.length){const n=ws.length,m=ts.length,s=Math.min(m-1,Math.floor(wi*m/n)),e=Math.max(s,Math.min(m-1,Math.ceil((wi+1)*m/n)-1));for(let k=s;k<=e;k++)ts[k].classList.add('on');}
+}
+function dlgHL(i,wi){
+  const a=document.getElementById('ln'+i);if(!a)return;
+  hlWords(a,wi,a.querySelectorAll('.wd'),a.querySelectorAll('.wt'));
 }
 function dlgSpan(t,c){return String(t).split(/\s+/).filter(Boolean).map(w=>`<span class="${c}">${esc(w)}</span>`).join(' ');}
 function playDlg(L,rate,o){
@@ -769,10 +772,10 @@ function playDlg(L,rate,o){
     o.onIdx&&o.onIdx(idx);
     const st=[];t.replace(/\S+/g,(w,p)=>{st.push(p);return w;});
     let adv=false,timer=null,w=null,viaB=false,t0=0,last=-1;
-    const hl=k=>{if(k!==last){last=k;dlgHL(idx,k);}};
-    const nx=()=>{if(adv||tok!==AU.tok)return;adv=true;clearInterval(timer);clearTimeout(w);dlgHL(idx,-1);i++;setTimeout(step,550);};
+    const H=o.hl||dlgHL;const hl=k=>{if(k!==last){last=k;H(idx,k,st.length);}};
+    const nx=()=>{if(adv||tok!==AU.tok)return;adv=true;clearInterval(timer);clearTimeout(w);H(idx,-1,0);i++;setTimeout(step,550);};
     try{
-      const u=dlgU(t,role,rate);
+      let u;if(o.single){u=new SpeechSynthesisUtterance(t);u.lang=VL;pv(u);u.rate=rate;}else u=dlgU(t,role,rate);
       u.onstart=()=>{t0=Date.now();clearInterval(timer);timer=setInterval(()=>{if(viaB)return;const c=(Date.now()-t0)/(72/rate);let k=0;for(let j=0;j<st.length;j++)if(st[j]<=c)k=j;hl(k);},90);hl(0);};
       u.onboundary=ev=>{if(ev.name&&ev.name!=='word')return;viaB=true;let k=0;for(let j=0;j<st.length;j++)if(st[j]<=ev.charIndex)k=j;hl(k);};
       u.onend=nx;u.onerror=nx;speechSynthesis.speak(u);
@@ -795,14 +798,14 @@ function playSeq(sents,rate,onIdx,done){
 function rReader(){
   stopAudio();
   const d=DATA[CUR.l],s=d.stories[CUR.i];S.sd[s.n]=1;save();checkBadges();hintsGL(d);preloadAll();
-  const en=spl(s.en);
-  const toks=x=>x.split(' ').map(t=>{const c=t.replace(ZW,''),m=c.match(/\p{L}[\p{L}'’-]*/u);return m?`<span class="wd" data-w="${esc(m[0].toLowerCase())}">${esc(t)}</span>`:esc(t);}).join(' ');
+  const en=spl(s.en);const ttr=spl(s.tr),tal=ttr.length===en.length;
+  const toks=x=>x.split(' ').map(t=>{const c=t.replace(ZW,''),m=c.match(/\p{L}[\p{L}'’-]*/u);return m?`<span class="wd" data-w="${esc(m[0].toLowerCase())}">${esc(t)}</span>`:(t?`<span class="tk">${esc(t)}</span>`:'');}).join(' ');
   $('#app').innerHTML=`<button class="ghost sm" id="bk">← Liste</button><h2>${s.n}. ${esc(s.title.split(' / ')[0])}</h2><p class="sub">${esc(s.title.split(' / ')[1]||'')}</p><div class="card small">🎯 Gramer odağı: <b>${esc(s.focus)}</b></div>
   <div class="card" id="txt" style="line-height:1.9;font-size:17px">${en.map((x,i)=>`<span class="sn" data-i="${i}" style="border-radius:6px;padding:1px 0">${toks(x)} </span>`).join('')}</div>
   <div class="row" style="margin-bottom:6px"><button class="chip ${RD.mode==='w'?'sel':''}" id="mw">👆 Kelimeye dokun</button><button class="chip ${RD.mode==='s'?'sel':''}" id="ms">🔊 Cümleye dokun</button></div>
   ${canSay()?`<div class="card"><div class="row"><button id="all">▶ Hikâyeyi baştan sona dinle</button><button class="ghost" id="stp" style="display:none">⏹ Durdur</button></div><div class="row" style="margin-top:8px"><span class="small">Hız:</span>${[['🐢',.5],['🚶',.7],['🏃',.9]].map(r=>`<button class="chip ${RD.rate===r[1]?'sel':''}" data-r="${r[1]}">${r[0]} ${r[1]}x</button>`).join('')}</div><div class="row" style="margin-top:8px"><span class="small">Ses:</span><select id="vsel" style="max-width:70%">${vList().map(v=>`<option value="${esc(v.voiceURI)}">${esc(v.name)}</option>`).join('')||'<option>Varsayılan</option>'}</select><button class="ghost" id="vtest">▶ Dene</button></div></div>`:''}
   <div class="row"><button class="ghost" id="ttr">${showTR?'Türkçeyi gizle':'🇹🇷 Türkçesini göster'}</button></div>
-  ${showTR?`<div class="card" style="line-height:1.6;color:#374151">${esc(s.tr)}</div>`:''}
+  ${showTR?(tal?`<div class="card" id="trc" style="line-height:1.6;color:#374151">${ttr.map((x,i)=>`<span class="tn" data-i="${i}">${dlgSpan(x.replace(ZW,''),'wt')} </span>`).join('')}</div>`:`<div class="card" id="trc" style="line-height:1.6;color:#374151">${dlgSpan(s.tr.replace(ZW,''),'wt')}</div>`):''}
   <button id="bd" style="width:100%;margin-top:12px">✍️ Şimdi cümle kur</button>
   <div class="row" style="margin-top:8px">${CUR.i>0?'<button class="ghost" id="pv">◀ Önceki</button>':''}${CUR.i<d.stories.length-1?'<button class="ghost" id="nx">Sonraki ▶</button>':''}</div><div id="wp"></div>`;
   $('#bk').onclick=()=>{stopAudio();view='story';render();};
@@ -810,10 +813,16 @@ function rReader(){
   $('#mw').onclick=()=>{RD.mode='w';rReader();};$('#ms').onclick=()=>{RD.mode='s';rReader();};
   {const vs=$('#vsel');if(vs){let sv=null;try{sv=localStorage.getItem('vc_'+VL);}catch(e){}if(sv)vs.value=sv;vs.onchange=()=>{try{localStorage.setItem('vc_'+VL,vs.value);}catch(e){}};const vt=$('#vtest');if(vt)vt.onclick=()=>{try{localStorage.setItem('vc_'+VL,vs.value);}catch(e){}stopAudio();say(en[0].replace(ZW,''),RD.rate);};}}
   document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{RD.rate=+b.dataset.r;rReader();});
-  const hl=i=>{document.querySelectorAll('.sn').forEach((e,j)=>e.style.background=j===i?'#e0e7ff':'');const e=document.querySelector(`.sn[data-i="${i}"]`);if(e&&e.scrollIntoView)e.scrollIntoView({block:'center',behavior:'smooth'});};
+  const hl=i=>{document.querySelectorAll('.sn').forEach((e,j)=>e.style.background=j===i?'#e0e7ff':'');document.querySelectorAll('.tn').forEach((e,j)=>e.style.background=j===i?'#dcfce7':'');const e=document.querySelector(`.sn[data-i="${i}"]`);if(e&&e.scrollIntoView)e.scrollIntoView({block:'center',behavior:'smooth'});};
+  const enN=en.map(x=>x.split(' ').filter(Boolean).length);
+  const wh=(i,wi,n)=>{const a=document.querySelector(`.sn[data-i="${i}"]`);if(!a)return;document.querySelectorAll('#txt .on,#trc .on').forEach(x=>x.classList.remove('on'));if(wi<0)return;
+    const ws=a.querySelectorAll('.wd,.tk');if(ws[wi])ws[wi].classList.add('on');
+    if(tal){const t=document.querySelector(`.tn[data-i="${i}"]`);if(t){const ts=t.querySelectorAll('.wt'),m=ts.length,N=ws.length||1;if(m){const s0=Math.min(m-1,Math.floor(wi*m/N)),e0=Math.max(s0,Math.min(m-1,Math.ceil((wi+1)*m/N)-1));for(let k=s0;k<=e0;k++)ts[k].classList.add('on');}}}
+    else{const ts=document.querySelectorAll('#trc .wt'),m=ts.length;if(m){const tot=enN.reduce((x,y)=>x+y,0)||1;let pre=0;for(let j=0;j<i;j++)pre+=enN[j];const g=pre+wi,s0=Math.min(m-1,Math.floor(g*m/tot)),e0=Math.max(s0,Math.min(m-1,Math.ceil((g+1)*m/tot)-1));for(let k=s0;k<=e0;k++)ts[k].classList.add('on');}}};
   if($('#all')){
-    $('#all').onclick=()=>{$('#all').style.display='none';$('#stp').style.display='';playSeq(en.map(x=>x.replace(ZW,'')),RD.rate,hl,()=>{if($('#all')){$('#all').style.display='';$('#stp').style.display='none';document.querySelectorAll('.sn').forEach(e=>e.style.background='');}if(!S.cnt['l'+s.n]){S.cnt['l'+s.n]=1;xpa(5);}});};
-    $('#stp').onclick=()=>{stopAudio();$('#all').style.display='';$('#stp').style.display='none';document.querySelectorAll('.sn').forEach(e=>e.style.background='');};
+    $('#all').onclick=()=>{if(!showTR){showTR=true;RD.auto=true;rReader();return;}$('#all').style.display='none';$('#stp').style.display='';playDlg(en.map(x=>({en:x,s:'A'})),RD.rate,{single:1,hl:wh,onIdx:hl,done:()=>{if($('#all')){$('#all').style.display='';$('#stp').style.display='none';document.querySelectorAll('.sn,.tn').forEach(e=>e.style.background='');document.querySelectorAll('#txt .on,#trc .on').forEach(x=>x.classList.remove('on'));}if(!S.cnt['l'+s.n]){S.cnt['l'+s.n]=1;xpa(5);}}});};
+    if(RD.auto){RD.auto=false;setTimeout(()=>{const b=$('#all');if(b)b.click();},50);}
+    $('#stp').onclick=()=>{stopAudio();$('#all').style.display='';$('#stp').style.display='none';document.querySelectorAll('.sn,.tn').forEach(e=>e.style.background='');document.querySelectorAll('#txt .on,#trc .on').forEach(x=>x.classList.remove('on'));};
   }
   $('#txt').onclick=ev=>{
     const sn=ev.target.closest('.sn');if(!sn)return;const i=+sn.dataset.i,sent=en[i].replace(ZW,'');
@@ -2193,13 +2202,16 @@ async function rRdy(){
     const day=Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/864e5);RDY={lvl:lv,i:day%d.rd.length,m:'t',ans:{}};}
   const L=DATA[RDY.lvl].rd,n=L.length,x=L[RDY.i];S.rdd=S.rdd||{};const key=RDY.lvl+':'+RDY.i;
   const sents=cl(x.x).match(/[^.!?]+[.!?]+/g)||[cl(x.x)];
+  const rdHtml=(()=>{const T=cl(x.x);let o='',last=0;(T.match(/[^.!?]+[.!?]+/g)||[]).forEach((m,i)=>{o+=`<span class="sn" data-i="${i}" style="border-radius:6px">${m.trim().split(/\s+/).map(w=>`<span class="wd">${esc(w)}</span>`).join(' ')} </span>`;last+=m.length;});const rest=T.slice(last).trim();return o+(rest?esc(rest):'');})();
   const top=hd+`<h2>📰 Günlük Okuma</h2>${chips()}<p class="sub">${RDY.lvl} • metin ${RDY.i+1} / ${n} ${S.rdd[key]?'✅':''}</p>`;
   if(RDY.m==='t'){
-    $('#app').innerHTML=top+`<div class="card" style="line-height:1.7"><b style="font-size:18px">${esc(cl(x.t))}</b><p style="font-size:17px">${esc(cl(x.x))}</p><div class="row"><button class="ghost sm" id="ls">🔊 Dinle</button><button class="ghost sm" id="sl">🐢 Yavaş</button></div></div>
-    <div class="card"><b>Yeni kelimeler</b>${x.v.map((v,i)=>`<div style="padding:6px 0;border-top:1px solid var(--line)"><button class="ghost sm" data-s="${i}" style="padding:2px 8px">🔊</button> <b>${esc(cl(v.w))}</b> — ${esc(cl(v.tr))} <button class="ghost sm" data-nb="${i}" style="padding:2px 8px;float:right">📒</button></div>`).join('')}</div>
+    $('#app').innerHTML=top+`<div class="card" style="line-height:1.7"><b style="font-size:18px">${esc(cl(x.t))}</b><p style="font-size:17px" id="rdt">${rdHtml}</p><div class="row"><button class="ghost sm" id="ls">🔊 Dinle</button><button class="ghost sm" id="sl">🐢 Yavaş</button></div></div>
+    <div class="card"><b>Yeni kelimeler</b>${x.v.map((v,i)=>`<div class="vr" data-vr="${i}" style="padding:6px 0;border-top:1px solid var(--line)"><button class="ghost sm" data-s="${i}" style="padding:2px 8px">🔊</button> <b>${esc(cl(v.w))}</b> — ${esc(cl(v.tr))} <button class="ghost sm" data-nb="${i}" style="padding:2px 8px;float:right">📒</button></div>`).join('')}</div>
     <div class="row"><button id="qz">Soruları çöz ➜</button><button class="ghost" id="nx">Başka metin</button></div>`;
     wire();$('#bk').onclick=toWork;
-    $('#ls').onclick=()=>playSeq(sents.map(t=>t.trim()),0.9,()=>{},()=>{});$('#sl').onclick=()=>playSeq(sents.map(t=>t.trim()),0.6,()=>{},()=>{});
+    const norm=w=>w.toLowerCase().replace(/[^\p{L}\p{N}'’-]/gu,'');const vw=x.v.map(v=>cl(v.w).split(/\s+/).map(norm).filter(z=>z.length>2));
+    const rdPlay=r=>playDlg(sents.map(t=>({en:t.trim(),s:'A'})),r,{single:1,onIdx:i=>{document.querySelectorAll('#rdt .sn').forEach((e,j)=>e.style.background=j===i?'#e0e7ff':'');},hl:(i,wi)=>{const a=document.querySelector(`#rdt .sn[data-i="${i}"]`);if(!a)return;document.querySelectorAll('#rdt .on,.vr.on').forEach(z=>z.classList.remove('on'));if(wi<0)return;const ws=a.querySelectorAll('.wd');if(ws[wi]){ws[wi].classList.add('on');const nw=norm(ws[wi].textContent);vw.forEach((parts,k)=>{if(nw.length>2&&parts.includes(nw)){const r=document.querySelector(`.vr[data-vr="${k}"]`);if(r)r.classList.add('on');}});}},done:()=>{document.querySelectorAll('#rdt .sn').forEach(e=>e.style.background='');}});
+    $('#ls').onclick=()=>rdPlay(0.9);$('#sl').onclick=()=>rdPlay(0.6);
     document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>say(cl(x.v[+b.dataset.s].w)));
     document.querySelectorAll('[data-nb]').forEach(b=>b.onclick=()=>{const v=x.v[+b.dataset.nb];const r=nbAdd(cl(v.w),cl(v.tr),'');toast(r===false?'Zaten defterde':'Deftere eklendi');});
     $('#qz').onclick=()=>{RDY.m='q';RDY.ans={};rRdy();};$('#nx').onclick=()=>{RDY.i=(RDY.i+1)%n;rRdy();};return;}
