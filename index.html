@@ -415,7 +415,7 @@ async function rStoryHome(){
   const sd=S.sd,bd=S.bd,pd=S.pd,e=S.ex[S.lvl];
   $('#app').innerHTML=`<h2>📖 Hikâye Yolculuğu</h2><p class="sub">Kısa İspanyolca hikâyeler.</p>${chips()}
   <div class="card"><b>${d.level} • ${d.stories.length} hikâye</b><p class="small">Okudun: ${d.stories.filter(s=>sd[s.n]).length} • Cümle kurdun: ${d.stories.filter(s=>bd[s.n]).length}</p>
-  ${d.stories.map((s,i)=>`<button class="opt" data-st="${i}">${bd[s.n]?'✅':sd[s.n]?'📗':'📘'} ${s.n}. ${esc(s.title.split(' / ')[0])}<br><span class="small">${esc(s.focus)}</span></button>`).join('')}</div>
+  ${d.stories.map((s,i)=>`<button class="opt" data-st="${i}">${bd[s.n]?'✅':sd[s.n]?'📗':'📘'} ${s.n}. ${esc(s.title.split(' / ')[0])}<br><span class="small">${(S.bi&&S.bi[s.n]&&S.bi[s.n].length)?'🎧 '+S.bi[s.n].length+'/4 • ':''}${esc(s.focus)}</span></button>`).join('')}</div>
   <div class="card"><b>✍️ Pratik: Türkçeden İspanyolcaya çevir</b><p class="sub">Sana Türkçe hikâye cümleleri veririm, sen İspanyolcasını yazarsın.</p>${d.practice.map((p,i)=>`<button class="opt" data-pr="${i}">${pd[d.level+p.n]?'✅':'✍️'} ${p.n}. ${esc(p.title)}<br><span class="small">${esc(p.focus)}</span></button>`).join('')}</div>
   <div class="card"><b>🎓 ${d.level} Seviye Sınavı (${d.exam.q.length} soru)</b><p class="sub">Geçme barajı: %80.${e!==undefined?` En iyi puanın: <b>${e}</b>/100`:''}</p><button id="gx">${e!==undefined?'Sınavı tekrarla':'Sınava başla'}</button></div>`;
   wire();
@@ -866,21 +866,50 @@ function playSeq(sents,rate,onIdx,done){
     w=setTimeout(nx,Math.max(3000,sents[i].split(' ').length*650/rate+2500));};
   try{speechSynthesis.cancel();speechSynthesis.resume();}catch(e){}setTimeout(step,300);
 }
+const BISTEPS=[[1,'1️⃣ Türkçe → İspanyolca','Önce Türkçe anlamı duyarsın, sonra İspanyolca iki kez'],[2,'2️⃣ İspanyolca → Türkçe','Önce İspanyolca, sonra Türkçesi; kafanda eşleştirirsin'],[3,'3️⃣ İspanyolca + tekrar','İspanyolcayi dinle, boşlukta sen tekrar et, sonra tekrar dinle'],[4,'4️⃣ Sadece İspanyolca','Anlamı artık biliyorsun; yalnız İspanyolca dinle']];
+function trVoice(){try{return (speechSynthesis.getVoices()||[]).filter(v=>v.lang.toLowerCase().startsWith('tr')).sort((a,b)=>vScore(b)-vScore(a))[0]||null;}catch(e){return null;}}
+function spk(t,lang,rate,tok){return new Promise(res=>{if(tok!==AU.tok)return res();let d=false,w;const f=()=>{if(d)return;d=true;clearTimeout(w);res();};try{const u=new SpeechSynthesisUtterance(t);if(lang==='tr'){u.lang='tr-TR';const v=trVoice();if(v){u.voice=v;u.lang=v.lang;}}else{u.lang=VL;pv(u);}u.rate=rate;u.onend=f;u.onerror=f;speechSynthesis.speak(u);}catch(e){f();}w=setTimeout(f,Math.max(3000,t.split(' ').length*650/rate+2500));});}
+const wt_=ms=>new Promise(r=>setTimeout(r,ms));
+async function playBi(en,tr,mode,rate,onIdx,done){
+  stopAudio();if(!canWeb){done&&done();return;}const tok=AU.tok;AU.on=true;
+  try{speechSynthesis.cancel();speechSynthesis.resume();}catch(e){}await wt_(300);
+  for(let i=0;i<en.length;i++){
+    if(tok!==AU.tok)return;
+    const e=String(en[i]).replace(ZW,''),t=String(tr[i]||'').replace(ZW,''),gap=Math.max(1800,e.split(' ').length*550/rate+900);
+    if(mode===1){onIdx&&onIdx(i,'tr');await spk(t,'tr',.95,tok);await wt_(500);if(tok!==AU.tok)return;onIdx&&onIdx(i,'en');await spk(e,'en',rate,tok);await wt_(700);await spk(e,'en',rate,tok);}
+    else if(mode===2){onIdx&&onIdx(i,'en');await spk(e,'en',rate,tok);await wt_(600);if(tok!==AU.tok)return;onIdx&&onIdx(i,'tr');await spk(t,'tr',.95,tok);}
+    else if(mode===3){onIdx&&onIdx(i,'en');await spk(e,'en',rate,tok);if(tok!==AU.tok)return;onIdx&&onIdx(i,'me');await wt_(gap);if(tok!==AU.tok)return;onIdx&&onIdx(i,'en');await spk(e,'en',rate,tok);}
+    else{onIdx&&onIdx(i,'en');await spk(e,'en',rate,tok);}
+    await wt_(650);
+  }
+  if(tok!==AU.tok)return;AU.on=false;done&&done();
+}
 function rReader(){
   stopAudio();
   const d=DATA[CUR.l],s=d.stories[CUR.i];S.sd[s.n]=1;save();checkBadges();hintsGL(d);preloadAll();
-  const en=spl(s.en);const ttr=spl(s.tr),tal=ttr.length===en.length;
+  const en=s.pe||spl(s.en);const ttr=s.pt||spl(s.tr),tal=ttr.length===en.length;
+  S.bi=S.bi||{};const bdn=S.bi[s.n]||[];if(RD.biStory!==s.n){RD.biStory=s.n;RD.bi=[1,2,3,4].find(x=>!bdn.includes(x))||4;}
   const toks=x=>x.split(' ').map(t=>{const c=t.replace(ZW,''),m=c.match(/\p{L}[\p{L}'’-]*/u);return m?`<span class="wd" data-w="${esc(m[0].toLowerCase())}">${esc(t)}</span>`:(t?`<span class="tk">${esc(t)}</span>`:'');}).join(' ');
   $('#app').innerHTML=`<button class="ghost sm" id="bk">← Liste</button><h2>${s.n}. ${esc(s.title.split(' / ')[0])}</h2><p class="sub">${esc(s.title.split(' / ')[1]||'')}</p><div class="card small">🎯 Gramer odağı: <b>${esc(s.focus)}</b></div>
   <div class="card" id="txt" style="line-height:1.9;font-size:17px">${en.map((x,i)=>`<span class="sn" data-i="${i}" style="border-radius:6px;padding:1px 0">${toks(x)} </span>`).join('')}</div>
   <div class="row" style="margin-bottom:6px"><button class="chip ${RD.mode==='w'?'sel':''}" id="mw">👆 Kelimeye dokun</button><button class="chip ${RD.mode==='s'?'sel':''}" id="ms">🔊 Cümleye dokun</button></div>
   ${canSay()?`<div class="card"><div class="row"><button id="all">▶ Hikâyeyi baştan sona dinle</button><button class="ghost" id="stp" style="display:none">⏹ Durdur</button></div><div class="row" style="margin-top:8px"><span class="small">Hız:</span>${[['🐢',.5],['🚶',.7],['🏃',.9]].map(r=>`<button class="chip ${RD.rate===r[1]?'sel':''}" data-r="${r[1]}">${r[0]} ${r[1]}x</button>`).join('')}</div><div class="row" style="margin-top:8px"><span class="small">Ses:</span><select id="vsel" style="max-width:70%">${vList().map(v=>`<option value="${esc(v.voiceURI)}">${esc(v.name)}</option>`).join('')||'<option>Varsayılan</option>'}</select><button class="ghost" id="vtest">▶ Dene</button></div></div>`:''}
+  ${canSay()?(tal?`<div class="card" id="bic"><b>🎧 Çift dilli dinle</b><div class="small" style="margin:4px 0 8px">İspanyolca ile Türkçeyi kulağında eşleştir. 1'den 4'e adım adım ilerle. Bu hikâye: <b>${bdn.length}/4</b> adım tamam.</div>${BISTEPS.map(b=>`<button class="chip ${RD.bi===b[0]?'sel':''}" data-bi="${b[0]}">${bdn.includes(b[0])?'✅ ':''}${b[1]}</button>`).join('')}<div class="small" style="margin:8px 0">${esc((BISTEPS.find(b=>b[0]===(RD.bi||1))||BISTEPS[0])[2])}</div><div class="row"><button id="bgo">▶ Başlat</button><button class="ghost" id="bst" style="display:none">⏹ Durdur</button></div></div>`:`<div class="card small">🎧 Çift dilli dinleme bu hikâyede yok (cümle eşleşmesi yok).</div>`):''}
   <div class="row"><button class="ghost" id="ttr">${showTR?'Türkçeyi gizle':'🇹🇷 Türkçesini göster'}</button></div>
   ${showTR?(tal?`<div class="card" id="trc" style="line-height:1.6;color:#374151">${ttr.map((x,i)=>`<span class="tn" data-i="${i}">${dlgSpan(x.replace(ZW,''),'wt')} </span>`).join('')}</div>`:`<div class="card" id="trc" style="line-height:1.6;color:#374151">${dlgSpan(s.tr.replace(ZW,''),'wt')}</div>`):''}
   <button id="bd" style="width:100%;margin-top:12px">✍️ Şimdi cümle kur</button>
   <div class="row" style="margin-top:8px">${CUR.i>0?'<button class="ghost" id="pv">◀ Önceki</button>':''}${CUR.i<d.stories.length-1?'<button class="ghost" id="nx">Sonraki ▶</button>':''}</div><div id="wp"></div>`;
   $('#bk').onclick=()=>{stopAudio();view='story';render();};
   $('#ttr').onclick=()=>{showTR=!showTR;rReader();};
+  document.querySelectorAll('[data-bi]').forEach(b=>b.onclick=()=>{RD.bi=+b.dataset.bi;rReader();});
+  if($('#bgo')){
+    const clr=()=>document.querySelectorAll('.sn,.tn').forEach(e=>{e.style.background='';});
+    const bhl=(i,w)=>{clr();const a=document.querySelector(`.sn[data-i="${i}"]`),b=document.querySelector(`.tn[data-i="${i}"]`);if(w==='tr'&&b){b.style.background='#dcfce7';b.scrollIntoView&&b.scrollIntoView({block:'center',behavior:'smooth'});}else if(a){a.style.background=w==='me'?'#fef3c7':'#e0e7ff';a.scrollIntoView&&a.scrollIntoView({block:'center',behavior:'smooth'});}if(w==='me')toast('🗣 Şimdi sen tekrar et');};
+    const go=()=>{$('#bgo').style.display='none';$('#bst').style.display='';const stp=RD.bi||1;playBi(en,ttr,stp,RD.rate,bhl,()=>{clr();S.bi=S.bi||{};const a=S.bi[s.n]||(S.bi[s.n]=[]);const first=!a.includes(stp);if(first){a.push(stp);a.sort();try{xpa(3);}catch(e){}}save();const nx=[1,2,3,4].find(x=>!a.includes(x));if(nx){RD.bi=nx;toast('✅ Adım '+stp+' tamam'+(first?' (+3 XP)':'')+' • sıradaki: Adım '+nx);}else toast('🏆 Bu hikâyenin 4 adımını da bitirdin!');if(view==='reader')rReader();});};
+    $('#bgo').onclick=()=>{if(!showTR){showTR=true;RD.autoBi=true;rReader();return;}go();};
+    if(RD.autoBi){RD.autoBi=false;setTimeout(()=>{if($('#bgo'))go();},60);}
+    $('#bst').onclick=()=>{stopAudio();clr();$('#bgo').style.display='';$('#bst').style.display='none';};
+  }
   $('#mw').onclick=()=>{RD.mode='w';rReader();};$('#ms').onclick=()=>{RD.mode='s';rReader();};
   {const vs=$('#vsel');if(vs){let sv=null;try{sv=localStorage.getItem('vc_'+VL);}catch(e){}if(sv)vs.value=sv;vs.onchange=()=>{try{localStorage.setItem('vc_'+VL,vs.value);}catch(e){}};const vt=$('#vtest');if(vt)vt.onclick=()=>{try{localStorage.setItem('vc_'+VL,vs.value);}catch(e){}stopAudio();say(en[0].replace(ZW,''),RD.rate);};}}
   document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{RD.rate=+b.dataset.r;rReader();});
@@ -1101,7 +1130,7 @@ function wireHome(){
 
 // ---- cümle kur (kelime kutucukları) ----
 function startBuild(){
-  const d=DATA[CUR.l],s=d.stories[CUR.i],en=spl(s.en),tr=spl(s.tr),al=en.length===tr.length;
+  const d=DATA[CUR.l],s=d.stories[CUR.i],en=s.pe||spl(s.en),tr=s.pt||spl(s.tr),al=en.length===tr.length;
   const cand=en.map((x,i)=>({x,i})).filter(o=>{const n=o.x.split(' ').length;return n>=4&&n<=14;});
   const picks=shuffle(cand).slice(0,5).sort((a,b)=>a.i-b.i).map(o=>({en:o.x,tr:al?tr[o.i]:null}));
   CUR.b={picks,k:0,ok:0,tiles:null,ans:[],done:false,tries:0};view='build';render();
