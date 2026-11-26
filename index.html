@@ -867,8 +867,8 @@ function playSeq(sents,rate,onIdx,done){
   try{speechSynthesis.cancel();speechSynthesis.resume();}catch(e){}setTimeout(step,300);
 }
 const BISTEPS=[[1,'1️⃣ Türkçe → İspanyolca','Önce Türkçe anlamı duyarsın, sonra İspanyolca iki kez'],[2,'2️⃣ İspanyolca → Türkçe','Önce İspanyolca, sonra Türkçesi; kafanda eşleştirirsin'],[3,'3️⃣ İspanyolca + tekrar','İspanyolcayi dinle, boşlukta sen tekrar et, sonra tekrar dinle'],[4,'4️⃣ Sadece İspanyolca','Anlamı artık biliyorsun; yalnız İspanyolca dinle']];
-function trVoice(){try{return (speechSynthesis.getVoices()||[]).filter(v=>v.lang.toLowerCase().startsWith('tr')).sort((a,b)=>vScore(b)-vScore(a))[0]||null;}catch(e){return null;}}
-function spk(t,lang,rate,tok){return new Promise(res=>{if(tok!==AU.tok)return res();let d=false,w;const f=()=>{if(d)return;d=true;clearTimeout(w);res();};try{const u=new SpeechSynthesisUtterance(t);if(lang==='tr'){u.lang='tr-TR';const v=trVoice();if(v){u.voice=v;u.lang=v.lang;}}else{u.lang=VL;pv(u);}u.rate=rate;u.onend=f;u.onerror=f;speechSynthesis.speak(u);}catch(e){f();}w=setTimeout(f,Math.max(3000,t.split(' ').length*650/rate+2500));});}
+function trVoice(){try{const all=(typeof VOICES!=='undefined'&&VOICES.length)?VOICES:(speechSynthesis.getVoices()||[]);return all.filter(v=>(v.lang||'').replace('_','-').toLowerCase().startsWith('tr')).sort((a,b)=>vScore(b)-vScore(a))[0]||null;}catch(e){return null;}}
+function spk(t,lang,rate,tok){return new Promise(res=>{if(tok!==AU.tok)return res();let d=false,w;const f=()=>{if(d)return;d=true;clearTimeout(w);res();};try{const u=new SpeechSynthesisUtterance(t);if(lang==='tr'){const v=trVoice();if(v){u.voice=v;u.lang=v.lang;}else{u.lang='tr-TR';}}else{u.lang=VL;pv(u);}u.rate=rate;u.onend=f;u.onerror=f;speechSynthesis.speak(u);}catch(e){f();}w=setTimeout(f,Math.max(3000,t.split(' ').length*650/rate+2500));});}
 const wt_=ms=>new Promise(r=>setTimeout(r,ms));
 async function playBi(en,tr,mode,rate,onIdx,done){
   stopAudio();if(!canWeb){done&&done();return;}const tok=AU.tok;AU.on=true;
