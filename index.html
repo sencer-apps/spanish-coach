@@ -37,6 +37,25 @@ textarea{width:100%;font:inherit;border:2px solid var(--line);border-radius:12px
 .wd,.wt{transition:background .12s,box-shadow .12s}.wd.on{background:#fde047;box-shadow:0 0 0 2px #fde047;border-radius:4px;color:#111}.wt.on{background:#86efac;box-shadow:0 0 0 2px #86efac;border-radius:4px;color:#111}
 .tk{}.vr{transition:background .12s}.vr.on{background:#bbf7d0;border-radius:6px}.tn{border-radius:6px;transition:background .12s}
 .wd.sel,.sn.sel,[id^=ln].sel{outline:2px solid #f59e0b;border-radius:6px}#rdt .wd,[id^=ln] .wd{cursor:pointer}
+
+/* sıcak tema */
+:root{--bg:#fff7ed;--card:#fffdfa;--ink:#3b2a1e;--mut:#8a6b58;--pri:#ea580c;--pri2:#ffedd5;--ok:#16a34a;--bad:#e11d48;--line:#f5dcc4}
+body{background:linear-gradient(180deg,#ffedd5 0,var(--bg) 300px) fixed}
+h1,h2{color:var(--ink)}
+.card{border-radius:20px;box-shadow:0 2px 0 rgba(234,88,12,.06),0 8px 18px rgba(234,88,12,.08)}
+button{background:linear-gradient(135deg,#fb923c,#ea580c);box-shadow:0 3px 0 #c2410c;transition:transform .08s}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 #c2410c}
+button.ghost{background:var(--pri2);color:#c2410c;box-shadow:none}
+nav{background:#fffdfa;border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(234,88,12,.07)}
+nav button.on{background:var(--pri2);color:#c2410c}
+.wcat{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:20px;padding:12px;margin:12px 0;box-shadow:0 6px 16px rgba(234,88,12,.08)}
+.wcat .wh{font-weight:800;font-size:16px;margin:0 2px 8px;color:var(--ink)}
+.wcat .grid button{background:#fff;color:var(--ink);border:2px solid var(--line);box-shadow:none;font-weight:600;padding:13px 8px;line-height:1.35}
+.wcat .grid button:active{background:var(--pri2)}
+.wcat .grid button .small{color:var(--mut)!important}
+.wcat .grid button[style*="background:#dc2626"]{background:#dc2626;color:#fff;border-color:#dc2626}
+.wcat .grid button[style*="background:#dc2626"] .small{color:#fee2e2!important}
+.chip{box-shadow:0 1px 0 rgba(234,88,12,.15)}
 </style>
 </head>
 <body>
@@ -953,34 +972,12 @@ function showWord(w,sent){
 function rWork(){
   const due=nbDue().length;
   $('#app').innerHTML=`<h2>🧠 Çalış</h2><p class="sub">Seviye: <b>${S.lvl}</b> • hepsi cihazında çalışır, yapay zekâ gerekmez.</p>${chips()}
-  <div class="grid" style="margin-top:10px">
-  <button id="w1">📒 Kelime Defterim<br><span class="small" style="color:#fff">${due?due+' tekrar bekliyor':nbN()+' kelime'}</span></button>
-  <button id="w2">👂 Dinle ve Yaz</button>
-  <button id="w3">🎤 Konuşma Pratiği</button>
-  <button id="w5" style="${S.mis.length?'background:#dc2626':''}">❗ Yanlışlarım<br><span class="small" style="color:#fff">${S.mis.length} soru</span></button>
-  <button id="w6">🃏 Kelime Kartları</button>
-  <button id="w7">✅ Kelime Quiz</button>
-  <button id="w8">✍️ Türkçeden İspanyolcaya</button>
-  <button id="w9">🔁 Düzensiz Fiiller</button>
-  <button id="w10">💬 Diyaloglar</button>
-  <button id="w11">📘 Gramer Dersleri</button>
-  <button id="w12" style="grid-column:span 2">🖼️ Resimli Quiz</button>
-  <button id="w13" style="grid-column:span 2">🧩 Deyim & Kalıp</button>
-  <button id="w14" style="grid-column:span 2">✉️ E-posta & Mektup</button>
-  <button id="w15" style="grid-column:span 2">🔢 Sayı, Saat & Tarih</button>
-  <button id="w16" style="grid-column:span 2">🗣️ Telaffuz</button>
-  <button id="w17" style="grid-column:span 2">📊 Zamanlar & Fiil Çekimi</button>
-  <button id="w18" style="grid-column:span 2">📰 Günlük Okuma</button>
-  <button id="w23" style="grid-column:span 2">🇪🇸 Kültür & Deyimler</button>
-  <button id="w25" style="grid-column:span 2">🎭 Gündelik Durumlar</button>
-  <button id="w26" style="grid-column:span 2">📝 Yazma Pratiği</button>
-  <button id="w28" style="grid-column:span 2">🔁 Aralıklı Tekrar</button>
-  <button id="w29" style="grid-column:span 2">🎧 Dinleme</button>
-  <button id="w30" style="grid-column:span 2">📋 Konuşma Kalıpları</button>
-  <button id="w31" style="grid-column:span 2">🧩 Boşluk Doldur</button>
-  <button id="w27" style="grid-column:span 2">📅 Bugünün Planı</button>
-  <button id="w32" style="grid-column:span 2">🌐 Çevirmen (konuş, çevirsin)</button>
-  <button id="w33" style="grid-column:span 2">🌳 Kelime Ailesi (kök, ön ek, son ek)</button></div>`;
+  <div class="wcat" style="--c:#f97316"><div class="wh">🔁 Tekrar</div><div class="grid"><button id="w28">🔁 Aralıklı Tekrar</button><button id="w5" style="${S.mis.length?'background:#dc2626':''}">❗ Yanlışlarım<br><span class="small">${S.mis.length} soru</span></button><button id="w1">📒 Kelime Defterim<br><span class="small">${due?due+' tekrar bekliyor':nbN()+' kelime'}</span></button></div></div>
+  <div class="wcat" style="--c:#16a34a"><div class="wh">📚 Kelime</div><div class="grid"><button id="w6">🃏 Kelime Kartları</button><button id="w7">✅ Kelime Quiz</button><button id="w8">✍️ Türkçeden İspanyolcaya</button><button id="w31">🧩 Boşluk Doldur</button><button id="w33">🌳 Kelime Ailesi (kök, ön ek, son ek)</button><button id="w13">🧩 Deyim & Kalıp</button></div></div>
+  <div class="wcat" style="--c:#2563eb"><div class="wh">🧩 Dilbilgisi</div><div class="grid"><button id="w11">📘 Gramer Dersleri</button><button id="w9">🔁 Düzensiz Fiiller</button><button id="w17">📊 Zamanlar & Fiil Çekimi</button><button id="w15">🔢 Sayı, Saat & Tarih</button></div></div>
+  <div class="wcat" style="--c:#db2777"><div class="wh">🗣️ Konuşma & Dinleme</div><div class="grid"><button id="w2">👂 Dinle ve Yaz</button><button id="w3">🎤 Konuşma Pratiği</button><button id="w16">🗣️ Telaffuz</button><button id="w29">🎧 Dinleme</button><button id="w30">📋 Konuşma Kalıpları</button><button id="w10">💬 Diyaloglar</button><button id="w25">🎭 Gündelik Durumlar</button><button id="w32">🌐 Çevirmen (konuş, çevirsin)</button></div></div>
+  <div class="wcat" style="--c:#9333ea"><div class="wh">✍️ Yazma & Okuma</div><div class="grid"><button id="w26">📝 Yazma Pratiği</button><button id="w14">✉️ E-posta & Mektup</button><button id="w18">📰 Günlük Okuma</button><button id="w23">🇪🇸 Kültür & Deyimler</button><button id="w12">🖼️ Resimli Quiz</button></div></div>
+  <div class="wcat" style="--c:#0891b2"><div class="wh">📅 Plan</div><div class="grid"><button id="w27">📅 Bugünün Planı</button></div></div>`;
   wire();
   const go=(id,v,f)=>{const el=$('#'+id);if(el)el.onclick=()=>{view=v;if(f)f();render();};};
   go('w1','nb');go('w2','dict');go('w3','speak');go('w5','mis',()=>{MR=null;});go('w6','cards');go('w7','quiz',()=>{qz=null;});go('w8','tr');go('w9','irr',()=>{IR=null;});go('w10','dlg',()=>{if(DL)DL.sel=-1;});go('w11','gr',()=>{if(GR)GR.sel=-1;});go('w12','pic',()=>{PQ=null;});go('w13','ph',()=>{PH=null;});go('w14','em',()=>{EM=null;});go('w15','num',()=>{NQ=null;});go('w16','pron',()=>{PN=null;});go('w17','ten',()=>{TQ2=null;});go('w18','rdy',()=>{RDY=null;});go('w25','sen',()=>{SN=null;});go('w26','wri',()=>{WR=null;});go('w27','plan');go('w32','itp',()=>{ITP=null;});go('w33','fam',()=>{FM=null;});go('w28','srs',()=>{SR2=null;});go('w29','lis',()=>{LS=null;});go('w30','kal',()=>{KL=null;});go('w31','gap',()=>{GP=null;});go('w23','cult',()=>{CU={tab:'prv',q:null};});
